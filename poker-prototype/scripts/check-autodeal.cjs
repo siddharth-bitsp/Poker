@@ -1,0 +1,24 @@
+const { chromium } = require('C:/Users/sid/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert = require('node:assert/strict');
+let browser;
+(async () => {
+  browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+  const page = await browser.newPage({ viewport: { width: 1356, height: 819 } });
+  await page.goto('http://127.0.0.1:4173/');
+  await page.getByRole('button', { name: 'Table settings', exact: true }).click();
+  await page.getByLabel('Players at the table', { exact: true }).selectOption('2');
+  await page.getByRole('button', { name: 'Start new session', exact: true }).click();
+  await page.getByLabel('Bot pace', { exact: true }).selectOption('350');
+  await page.getByRole('checkbox', { name: 'Auto-deal' }).check();
+  await page.getByRole('button', { name: 'Fold', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause table', exact: true }).click();
+  const activity = await page.locator('.activity-scroll').innerText();
+  await page.waitForTimeout(900);
+  assert.equal(await page.locator('.activity-scroll').innerText(), activity, 'Pause stops bots');
+  await page.getByRole('button', { name: 'Resume table', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.table-heading p').textContent.includes('#002'), { timeout: 45000 });
+  await page.getByRole('button', { name: 'Pause table', exact: true }).click();
+  assert.equal(await page.locator('.error-message').count(), 0);
+  console.log('PASS: auto-deal advances hand, pause freezes bots, resume continues play.');
+  await browser.close();
+})().catch(async e => { console.error(e); await browser?.close(); process.exitCode = 1; });
